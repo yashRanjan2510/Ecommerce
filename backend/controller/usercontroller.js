@@ -4,19 +4,25 @@ const catchAsyncErrors =  require("../middleware/catchAsyncErrors");
 const sendToken = require("../utils/jwtToken");
 const sendEmail=require("../utils/sendEmail");
 const crypto= require("crypto");
+const cloudinary=require("cloudinary");
 
 
 
 //register user
 exports.registeruser=catchAsyncErrors(async(req,res,next)=>{
+    const myCloud=await cloudinary.v2.uploader.upload(req.body.avatar,{
+        folder:"avatars",
+        width:150,
+        crop:"scale"
+    })
     const{name,email,password}=req.body;
     const user=await User.create({
         name,
         email,
         password,
-        avator:{
-            public_id:"this is sample id",
-            url:"profileurl",
+        avatar:{
+            public_id:myCloud.public_id,
+            url:myCloud.secure_url,
         },
     })
     sendToken(user,201,res);
@@ -72,11 +78,10 @@ exports.forgotpassword=catchAsyncErrors(async(req,res,next)=>{
 
     //get resetpassword tokken
     const resettoken=  user.getResetPasswordToken();
-
+   
 
     await user.save({validateBeforeSave:false});
-     
-    const resetpasswordurl=`${req.protocol}://${req.get("host")}/api/v1/password/reset${resettoken}`
+    const resetpasswordurl=`${process.env.FRONTEND_URL}/password/reset/${resettoken}`
     const message=`Your password reset token is :- \n\n ${resetpasswordurl} \n\n if you have not requested this email then, please ignore it`
    
     try {
@@ -85,7 +90,6 @@ exports.forgotpassword=catchAsyncErrors(async(req,res,next)=>{
               email:user.email,
               subject:`Ecommerce Password Recovery`,
               message,
-
         })
         res.status(200).json({
             success:true,
@@ -174,13 +178,25 @@ exports.updateprofile=catchAsyncErrors( async(req,res,next)=>{
         return next(new ErrorHandler("Enter Email to update",400));
     }
 
-    //we will add cloudnary later
-    const  user = await User.findByIdAndUpdate(req.user.id,newuserdata,{
+    if (req.body.avatar !== "") {
+        const user = await User.findById(req.user.id);
+        const imageId = user.avatar.public_id;
+        await cloudinary.v2.uploader.destroy(imageId);
+        const myCloud = await cloudinary.v2.uploader.upload(req.body.avatar, {
+          folder: "avatars",
+          width: 150,
+          crop: "scale",
+        });
+        newuserdata.avatar = {
+            public_id: myCloud.public_id,
+            url: myCloud.secure_url,
+          };
+        }
+     const  user = await User.findByIdAndUpdate(req.user.id,newuserdata,{
         new:true,
         runValidators:true,
         useFindAndModify:false
-    })
-    
+    }) 
     res.status(200).json({
         success:true, 
         user

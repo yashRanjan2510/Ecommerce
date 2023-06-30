@@ -46,14 +46,21 @@ exports.deleteproduct=catchAsyncErrors(async (req,res,next)=>{
 
 //get all product
 exports.getAllProducts= catchAsyncErrors(async (req,res,next)=>{
-    const resultperpage=5;
-    const productcount=await Product.countDocuments();
-    const apifeature=new ApiFeatures(Product.find(),req.query).search().filter().pagination(resultperpage);
-    const product=await apifeature.query;
+    const resultperpage=8;
+    const productscount=await Product.countDocuments();
+    const apifeature=new ApiFeatures(Product.find(),req.query).search().filter();
+    let products = await apifeature.query;
+
+  let filteredproductcount = products.length;
+
+  apifeature.pagination(resultperpage);
+     products=await apifeature.query.clone();
     res.status(201).json({
         success:true,
-        product,
-        productcount
+        products,
+        productscount,
+        resultperpage,
+        filteredproductcount
     })
 })
 

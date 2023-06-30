@@ -8,7 +8,7 @@ router.route("/register").post(registeruser);
 router.route("/login").post(loginuser);
 router.route("/logout").get(logout);
 router.route("/password/forgot").post(forgotpassword);
-router.route("/password/reset:token").put(resetpassword);
+router.route("/password/reset/:token").put(resetpassword);
 router.route("/me").get(isauthenticated ,getuserdetails );
 router.route("/password/update").put(isauthenticated,updatepassword);
 router.route("/me/update").put(isauthenticated,updateprofile);
